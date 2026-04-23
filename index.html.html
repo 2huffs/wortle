@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wörtle — Lektion 7</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --green:#4a9e3f;--green-light:#e8f5e4;
+    --yellow:#c9a227;--yellow-light:#fdf6dc;
+    --gray:#7a7a7a;--gray-light:#f0eeea;
+    --bg:#faf9f6;--surface:#ffffff;--border:#e2dfd8;
+    --text:#1a1a1a;--text-muted:#6b6b6b;
+    --accent:#2d5fa6;--accent-light:#e8eef8;
+    --red:#c0392b;--red-light:#fdecea;
+    --radius:10px;--radius-lg:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+  header{width:100%;max-width:520px;padding:16px 20px 12px;display:flex;align-items:baseline;justify-content:center;gap:10px;border-bottom:1.5px solid var(--border);}
+  header h1{font-size:26px;font-weight:900;letter-spacing:-0.5px;}
+  header .sub{font-family:'Space Mono',monospace;font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;}
+  #main{width:100%;max-width:520px;padding:0 20px 40px;flex:1;}
+  .screen{display:none;}.screen.active{display:block;}
+
+  /* Setup */
+  .setup-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin:20px 0 14px;text-align:center;}
+  .setup-card h2{font-size:18px;font-weight:700;margin-bottom:6px;}
+  .setup-card p{font-size:13px;color:var(--text-muted);margin-bottom:20px;line-height:1.6;}
+  .name-wrap{margin-bottom:14px;}
+  .name-wrap input{width:100%;padding:13px 16px;border:1.5px solid var(--border);border-radius:var(--radius);font-family:'Outfit',sans-serif;font-size:16px;color:var(--text);background:var(--bg);outline:none;text-align:center;transition:border-color 0.15s;}
+  .name-wrap input:focus{border-color:var(--accent);}
+  .name-wrap input::placeholder{color:#bbb;}
+  .rounds-info{font-family:'Space Mono',monospace;font-size:11px;color:var(--text-muted);text-align:center;margin-bottom:16px;}
+  .hint-legend{background:var(--gray-light);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px;text-align:left;}
+  .hint-legend p{font-size:12px;color:var(--text-muted);line-height:1.8;}
+  .hint-legend strong{color:var(--text);font-weight:600;}
+  .btn-primary{display:block;width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;cursor:pointer;transition:background 0.15s,transform 0.1s;}
+  .btn-primary:hover{background:#1e4a8a;}
+  .btn-primary:active{transform:scale(0.98);}
+  .btn-secondary{display:block;width:100%;padding:12px;background:var(--surface);color:var(--text);border:1.5px solid var(--border);border-radius:var(--radius);font-family:'Outfit',sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:background 0.15s;margin-top:8px;}
+  .btn-secondary:hover{background:var(--gray-light);}
+
+  /* Game */
+  .game-topbar{display:flex;justify-content:space-between;align-items:center;padding:12px 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px;}
+  .player-label{font-size:15px;font-weight:700;color:var(--accent);}
+  .round-pill{font-family:'Space Mono',monospace;font-size:11px;background:var(--accent);color:#fff;padding:4px 10px;border-radius:20px;}
+  .progress-bar{height:4px;background:var(--border);border-radius:2px;margin-bottom:12px;overflow:hidden;}
+  .progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width 0.4s ease;}
+
+  .clue-box{background:var(--accent-light);border:1.5px solid #c5d5ef;border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:10px;}
+  .clue-label{font-family:'Space Mono',monospace;font-size:10px;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;font-weight:700;}
+  .clue-text{font-size:15px;color:#1a2a4a;line-height:1.55;}
+
+  .hints-area{margin-bottom:10px;}
+  .hints-row{display:flex;gap:8px;margin-bottom:6px;}
+  .hint-btn{flex:1;padding:8px 6px;border-radius:var(--radius);font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);transition:all 0.15s;text-align:center;line-height:1.3;}
+  .hint-btn:hover:not(:disabled){background:var(--gray-light);border-color:#bbb;}
+  .hint-btn:disabled{opacity:0.4;cursor:not-allowed;}
+  .hint-btn.used{background:var(--gray-light);color:var(--text-muted);border-color:var(--border);}
+  .hint-btn .penalty{display:block;font-size:10px;font-family:'Space Mono',monospace;color:var(--red);margin-top:2px;}
+  .hint-btn .free-tag{display:block;font-size:10px;font-family:'Space Mono',monospace;color:var(--green);margin-top:2px;}
+  .hint-reveal{background:var(--yellow-light);border:1px solid #e8d08a;border-radius:var(--radius);padding:10px 14px;font-size:13px;color:#7a5c00;line-height:1.5;margin-bottom:6px;display:none;}
+  .hint-reveal.visible{display:block;}
+  .hint-reveal strong{font-weight:700;}
+
+  .flash-bar{text-align:center;font-size:13px;color:var(--text-muted);min-height:20px;margin-bottom:8px;}
+  .flash-bar strong{color:var(--text);font-weight:600;}
+
+  #grid{display:flex;flex-direction:column;align-items:center;gap:5px;margin-bottom:10px;}
+  .row{display:flex;gap:5px;}
+  .cell{height:50px;border:2px solid var(--border);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-weight:800;font-family:'Space Mono',monospace;color:var(--text);background:var(--surface);text-transform:uppercase;transition:background 0.25s,border-color 0.25s,color 0.25s;}
+  .cell.active-row{border-color:#aaa;}
+  .cell.correct{background:var(--green);border-color:var(--green);color:#fff;}
+  .cell.present{background:var(--yellow);border-color:var(--yellow);color:#fff;}
+  .cell.absent{background:var(--gray);border-color:var(--gray);color:#fff;}
+
+  #game-msg{text-align:center;font-size:14px;font-weight:700;min-height:22px;margin-bottom:8px;}
+  #game-msg.win{color:var(--green);}
+  #game-msg.lose{color:var(--red);}
+
+  #keyboard{display:flex;flex-direction:column;align-items:center;gap:5px;margin-bottom:10px;}
+  .kb-row{display:flex;gap:4px;}
+  .key{min-width:30px;height:44px;padding:0 5px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s,color 0.15s,border-color 0.15s;user-select:none;}
+  .key:hover{background:var(--gray-light);}
+  .key.wide{min-width:50px;font-size:11px;}
+  .key.correct{background:var(--green);border-color:var(--green);color:#fff;}
+  .key.present{background:var(--yellow);border-color:var(--yellow);color:#fff;}
+  .key.absent{background:var(--gray-light);border-color:var(--border);color:#bbb;}
+
+  .legend{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;}
+  .leg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-muted);}
+  .leg-box{width:14px;height:14px;border-radius:4px;}
+  .leg-box.c{background:var(--green);}
+  .leg-box.p{background:var(--yellow);}
+  .leg-box.a{background:var(--gray);}
+
+  /* Round result */
+  .result-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:22px;margin:16px 0 12px;text-align:center;}
+  .result-word{font-family:'Space Mono',monospace;font-size:22px;font-weight:700;letter-spacing:3px;margin-bottom:4px;}
+  .result-translation{font-size:13px;color:var(--text-muted);margin-bottom:6px;font-style:italic;}
+  .result-clue-box{font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.4;background:var(--gray-light);padding:8px 12px;border-radius:var(--radius);}
+  .pts-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .pts-box{background:var(--gray-light);border-radius:var(--radius);padding:10px 8px;text-align:center;}
+  .pts-label{font-size:10px;color:var(--text-muted);margin-bottom:3px;font-weight:500;text-transform:uppercase;letter-spacing:0.3px;}
+  .pts-val{font-family:'Space Mono',monospace;font-size:22px;font-weight:700;}
+  .pts-val.win{color:var(--green);}
+  .pts-val.zero{color:var(--red);}
+  .pts-val.total{color:var(--accent);}
+  .pts-val.penalty{color:var(--red);font-size:16px;}
+  .rounds-remaining{font-size:12px;color:var(--text-muted);text-align:center;margin-top:10px;font-family:'Space Mono',monospace;}
+
+  /* Score sheet */
+  .scoresheet-header{padding:20px 0 12px;text-align:center;}
+  .scoresheet-header h2{font-size:22px;font-weight:900;margin-bottom:2px;}
+  .sheet-name{font-size:16px;color:var(--accent);font-weight:700;margin-bottom:4px;}
+  .scoresheet-header p{font-size:12px;color:var(--text-muted);font-family:'Space Mono',monospace;}
+  .print-note{background:var(--yellow-light);border:1px solid #e8d08a;border-radius:var(--radius);padding:10px 14px;font-size:12px;color:#7a6010;text-align:center;margin-bottom:12px;}
+  .grade-box{background:var(--surface);border:2px solid var(--accent);border-radius:var(--radius-lg);padding:20px;text-align:center;margin-bottom:14px;}
+  .grade-label{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);font-family:'Space Mono',monospace;margin-bottom:6px;}
+  .grade-score{font-family:'Space Mono',monospace;font-size:48px;font-weight:700;color:var(--accent);line-height:1;margin-bottom:4px;}
+  .grade-max{font-size:13px;color:var(--text-muted);}
+  .grade-date{font-size:11px;color:var(--text-muted);font-family:'Space Mono',monospace;margin-top:6px;}
+
+  .score-table{width:100%;border-collapse:collapse;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:14px;font-size:13px;}
+  .score-table th{background:var(--gray-light);font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;padding:8px 10px;text-align:left;border-bottom:1.5px solid var(--border);}
+  .score-table td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top;}
+  .score-table tr:last-child td{border-bottom:none;}
+  .score-table .word-col{font-family:'Space Mono',monospace;font-weight:700;font-size:12px;}
+  .score-table .clue-col{color:var(--text-muted);font-size:11px;line-height:1.4;}
+  .score-table .num-col{text-align:center;font-family:'Space Mono',monospace;font-size:12px;}
+  .score-table .pts-col{text-align:right;font-family:'Space Mono',monospace;font-weight:700;}
+  .score-table .pts-col.got{color:var(--green);}
+  .score-table .pts-col.miss{color:var(--red);}
+  .score-table tr.total-row td{background:var(--accent-light);font-weight:700;border-top:1.5px solid var(--border);}
+  .score-table tr.total-row .pts-col{color:var(--accent);font-size:16px;}
+
+  @media print{
+    body{background:#fff;}
+    header,.btn-primary,.btn-secondary,.print-note{display:none!important;}
+    #screen-scoresheet{display:block!important;}
+    .screen{display:none!important;}
+    #screen-setup,#screen-game,#screen-round-result{display:none!important;}
+  }
+  @media(max-width:400px){.cell{height:42px;}.clue-text{font-size:14px;}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Wörtle</h1>
+  <span class="sub">Lektion 7 · Wissenschaft &amp; Technologie</span>
+</header>
+
+<div id="main">
+
+  <!-- SETUP -->
+  <div id="screen-setup" class="screen active">
+    <div class="setup-card">
+      <h2>Willkommen!</h2>
+      <p>Lies die deutsche Definition und errate das Vokabelwort. 10 Runden, max. 100 Punkte.</p>
+      <div class="name-wrap">
+        <input type="text" id="student-name" placeholder="Dein Name..." maxlength="40" autocomplete="off">
+      </div>
+      <div class="hint-legend">
+        <p>
+          <strong>Tipp 1</strong> — Erster Buchstabe &nbsp;•&nbsp; <strong>kostenlos</strong><br>
+          <strong>Tipp 2</strong> — Wortstruktur (_ _ _ _) &nbsp;•&nbsp; <strong>−1 Punkt</strong><br>
+          <strong>Tipp 3</strong> — Englische Übersetzung &nbsp;•&nbsp; <strong>−1 Punkt</strong>
+        </p>
+      </div>
+      <div class="rounds-info">10 Runden · max. 100 Punkte · Wortlänge variiert</div>
+      <button class="btn-primary" id="start-btn">Los geht's!</button>
+    </div>
+  </div>
+
+  <!-- GAME -->
+  <div id="screen-game" class="screen">
+    <div class="game-topbar">
+      <span class="player-label" id="player-label"></span>
+      <span class="round-pill" id="round-pill">Runde 1 / 10</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+
+    <div class="clue-box">
+      <div class="clue-label">Definition</div>
+      <div class="clue-text" id="clue-text"></div>
+    </div>
+
+    <div class="hints-area">
+      <div class="hints-row">
+        <button class="hint-btn" id="hbtn1">
+          Tipp 1: Erster Buchstabe
+          <span class="free-tag">kostenlos</span>
+        </button>
+        <button class="hint-btn" id="hbtn2" disabled>
+          Tipp 2: Wortstruktur
+          <span class="penalty">−1 Punkt</span>
+        </button>
+        <button class="hint-btn" id="hbtn3" disabled>
+          Tipp 3: Englisch
+          <span class="penalty">−1 Punkt</span>
+        </button>
+      </div>
+      <div class="hint-reveal" id="hint-reveal-1"></div>
+      <div class="hint-reveal" id="hint-reveal-2"></div>
+      <div class="hint-reveal" id="hint-reveal-3"></div>
+    </div>
+
+    <div class="flash-bar" id="flash-bar">Errate das Wort in 6 Versuchen!</div>
+    <div id="grid"></div>
+    <div id="game-msg"></div>
+    <div id="keyboard"></div>
+    <div style="height:10px;"></div>
+    <div class="legend">
+      <div class="leg"><div class="leg-box c"></div>Richtige Stelle</div>
+      <div class="leg"><div class="leg-box p"></div>Falscher Platz</div>
+      <div class="leg"><div class="leg-box a"></div>Nicht im Wort</div>
+    </div>
+  </div>
+
+  <!-- ROUND RESULT -->
+  <div id="screen-round-result" class="screen">
+    <div class="result-card" id="result-card"></div>
+    <button class="btn-primary" id="next-round-btn">Nächste Runde →</button>
+    <div class="rounds-remaining" id="rounds-remaining"></div>
+  </div>
+
+  <!-- SCORE SHEET -->
+  <div id="screen-scoresheet" class="screen">
+    <div class="scoresheet-header">
+      <h2>Ergebnisblatt</h2>
+      <div class="sheet-name" id="sheet-name"></div>
+      <p>Lektion 7 — Wissenschaft &amp; Technologie</p>
+    </div>
+    <div class="print-note">Screenshot oder Druck — dann abgeben</div>
+    <div class="grade-box">
+      <div class="grade-label">Gesamtpunktzahl</div>
+      <div class="grade-score" id="grade-score">0</div>
+      <div class="grade-max">von 100 Punkten</div>
+      <div class="grade-date" id="grade-date"></div>
+    </div>
+    <table class="score-table" id="score-table"></table>
+    <button class="btn-primary" id="print-btn">Drucken / Screenshot</button>
+    <button class="btn-secondary" id="play-again-btn">Nochmal spielen</button>
+  </div>
+
+</div>
+
+<script>
+/* ── Vocabulary: words strictly from the Lektion 7 Fortschritt und Forschung picture ── */
+const VOCAB = [
+  /* Die Wissenschaftler */
+  {word:"ASTRONAUT",    clue:"Eine Person, die ausgebildet ist, um in einem Raumschiff ins Weltall zu reisen.", hint:"astronaut"},
+  {word:"ASTRONOM",     clue:"Ein Wissenschaftler, der den Nachthimmel, Sterne und Planeten systematisch beobachtet und erforscht.", hint:"astronomer"},
+  {word:"BIOLOGE",      clue:"Ein Wissenschaftler, der sich mit dem Aufbau, den Funktionen und dem Verhalten lebender Organismen befasst.", hint:"biologist"},
+  {word:"FORSCHER",     clue:"Eine Person, die systematisch Untersuchungen durchführt, um neue Erkenntnisse zu einem bestimmten Thema zu gewinnen.", hint:"researcher"},
+  {word:"GEOLOGE",      clue:"Ein Wissenschaftler, der die Entstehung, den Aufbau und die Veränderungen der Erde untersucht.", hint:"geologist"},
+  {word:"MATHEMATIKER", clue:"Eine Person, die sich beruflich oder wissenschaftlich mit Zahlen, Formeln und logischen Strukturen beschäftigt.", hint:"mathematician"},
+  {word:"PHYSIKER",     clue:"Ein Wissenschaftler, der die grundlegenden Gesetze der Natur untersucht, zum Beispiel Energie, Kraft und Materie.", hint:"physicist"},
+  {word:"ZOOLOGE",      clue:"Ein Wissenschaftler, der das Leben, das Verhalten und die Klassifizierung von Tieren erforscht.", hint:"zoologist"},
+
+  /* Wissenschaftliche Forschung */
+  {word:"DNS",          clue:"Das Molekül in jeder Zelle, das die genetische Information eines Lebewesens trägt.", hint:"DNA"},
+  {word:"ENTDECKUNG",   clue:"Das erstmalige Finden oder Erkennen von etwas, das vorher unbekannt oder verborgen war.", hint:"discovery"},
+  {word:"ENTWICKLUNG",  clue:"Der Prozess, durch den etwas von einem einfachen Zustand zu einem komplexeren oder verbesserten Zustand übergeht.", hint:"development"},
+  {word:"EXPERIMENT",   clue:"Ein wissenschaftlicher Versuch, bei dem unter kontrollierten Bedingungen eine Hypothese überprüft wird.", hint:"experiment"},
+  {word:"FORSCHUNG",    clue:"Systematische Untersuchungen, die neue Kenntnisse über ein bestimmtes Thema liefern sollen.", hint:"research"},
+  {word:"FORTSCHRITT",  clue:"Die positive Veränderung in Wissenschaft oder Gesellschaft, bei der etwas besser oder weiter entwickelt wird.", hint:"progress"},
+  {word:"GEN",          clue:"Die kleinste Einheit der Erbinformation, die bestimmte Eigenschaften eines Lebewesens kontrolliert.", hint:"gene"},
+  {word:"IMPFSTOFF",    clue:"Eine medizinische Substanz, die in den Körper gegeben wird, um das Immunsystem gegen eine Krankheit zu stärken.", hint:"vaccine"},
+  {word:"ZIEL",         clue:"Das angestrebte Ergebnis oder der Endzweck einer Handlung oder eines Plans.", hint:"goal"},
+  {word:"BEWEISEN",     clue:"Durch Fakten oder Argumente zeigen, dass etwas wahr oder richtig ist.", hint:"to prove"},
+  {word:"HEILEN",       clue:"Eine Krankheit oder Verletzung vollständig beseitigen, sodass der Körper wieder gesund wird.", hint:"to cure"},
+  {word:"IMPFEN",       clue:"Einem Menschen oder Tier einen Impfstoff verabreichen, um es vor einer Krankheit zu schützen.", hint:"to vaccinate"},
+
+  /* Die Technologie */
+  {word:"CODE",         clue:"Eine Folge von Anweisungen, die einem Computer sagt, was er tun soll.", hint:"code"},
+  {word:"DATENBANK",    clue:"Ein geordnetes System, in dem große Mengen digitaler Informationen gespeichert und abgerufen werden können.", hint:"database"},
+  {word:"ELEKTRONIK",   clue:"Der Bereich der Technik, der sich mit dem Verhalten von Elektronen in Schaltkreisen befasst.", hint:"electronics"},
+  {word:"GERAET",       clue:"Ein technisches Objekt oder Apparat, der für einen bestimmten Zweck konstruiert wurde.", hint:"device"},
+  {word:"INFORMATIK",   clue:"Die Wissenschaft, die sich mit der automatischen Verarbeitung von Informationen mithilfe von Computern befasst.", hint:"computer science"},
+  {word:"NETZWERK",     clue:"Ein System verbundener Computer, die Informationen und Ressourcen miteinander teilen.", hint:"network"},
+
+  /* Elektronikwelt */
+  {word:"RECHNER",      clue:"Ein elektronisches Gerät, das Berechnungen durchführt und Daten verarbeitet — das ältere Wort dafür.", hint:"computer"},
+  {word:"SMARTPHONE",   clue:"Ein kleines tragbares Telefon mit Touchscreen, das Internetzugang und viele Apps bietet.", hint:"smartphone"},
+  {word:"TABLET",       clue:"Ein flaches, tragbares Computergerät mit Touchscreen, das größer als ein Smartphone ist.", hint:"tablet computer"},
+  {word:"AKTUALISIEREN",clue:"Etwas auf den neuesten Stand bringen, zum Beispiel eine App oder ein Betriebssystem.", hint:"to update"},
+  {word:"HERUNTERLADEN",clue:"Das Übertragen von Daten oder Dateien aus dem Internet auf das eigene Gerät.", hint:"to download"},
+  {word:"KABELLOS",     clue:"Eine Verbindung oder Übertragung von Daten, die ohne physische Drähte funktioniert.", hint:"wireless"},
+
+  /* Probleme und Herausforderungen */
+  {word:"HERAUSFORDERUNG", clue:"Eine schwierige Aufgabe, die besondere Anstrengung und Fähigkeiten erfordert, um sie zu bewältigen.", hint:"challenge"},
+  {word:"MORALKODEX",   clue:"Eine Sammlung von Grundsätzen, die das richtige und falsche Verhalten in einer Gemeinschaft festlegen.", hint:"code of ethics"},
+  {word:"STAMMZELLE",   clue:"Eine undifferenzierte biologische Zelle, die sich in verschiedene Zelltypen des Körpers verwandeln kann.", hint:"stem cell"},
+  {word:"KLONEN",       clue:"Das Herstellen einer genetisch identischen Kopie eines Lebewesens oder einer Zelle im Labor.", hint:"to clone"},
+  {word:"ETHISCH",      clue:"Etwas, das den Grundsätzen der Moral entspricht und als moralisch richtig gilt.", hint:"ethical"},
+  {word:"UMSTRITTEN",   clue:"Über etwas gibt es viele verschiedene, oft gegensätzliche Meinungen — es ist nicht allgemein akzeptiert.", hint:"controversial"},
+  {word:"UNMORALISCH",  clue:"Etwas, das gegen die allgemein anerkannten ethischen Grundsätze einer Gesellschaft verstößt.", hint:"unethical"},
+  {word:"UNRECHT",      clue:"Etwas, das gegen das Recht oder die Gerechtigkeit verstößt — das Gegenteil von richtig.", hint:"wrong / unjust"},
+
+  /* Adverbs / Adjectives */
+  {word:"BLENDEND",     clue:"Ausgezeichnet und von sehr hoher Qualität — wird verwendet, wenn etwas außergewöhnlich gut ist.", hint:"fantastic"},
+  {word:"EIGENTLICH",   clue:"Drückt aus, wie etwas in Wirklichkeit ist, oft im Gegensatz zur Erwartung.", hint:"actually"},
+  {word:"GEBRECHLICH",  clue:"Körperlich schwach und anfällig für Krankheiten oder Verletzungen, oft im Alter.", hint:"frail"},
+  {word:"NÄMLICH",      clue:"Ein Adverb, das eine Erklärung oder Begründung für das Vorher-Gesagte einleitet.", hint:"namely"},
+  {word:"SCHLIMM",      clue:"Etwas ist sehr negativ, ernst oder unangenehm — schlimmer als normal.", hint:"very bad"},
+
+  /* Kultur */
+  {word:"ANSEHEN",      clue:"Der Ruf oder die Wertschätzung, die eine Person oder Institution in der Gesellschaft genießt.", hint:"reputation"},
+  {word:"WOHLSTAND",    clue:"Ein Zustand, in dem jemand oder eine Gesellschaft ausreichend materiellen Reichtum besitzt.", hint:"prosperity"},
+  {word:"BEFOERDERN",   clue:"Jemanden oder etwas von einem Ort an einen anderen transportieren, oder jemanden in eine höhere Position bringen.", hint:"to transport / promote"},
+  {word:"BEITRAGEN",    clue:"Einen Teil zu etwas Größerem leisten — zum Beispiel zu einem Projekt oder einer Gemeinschaft.", hint:"to add to / contribute"},
+  {word:"BESEITIGEN",   clue:"Etwas vollständig entfernen oder ein Problem dauerhaft aus dem Weg räumen.", hint:"to eliminate"},
+  {word:"GESTALTEN",    clue:"Etwas aktiv formen oder entwickeln — zum Beispiel eine Situation oder ein Produkt.", hint:"to shape / turn out"},
+  {word:"VERKLAGEN",    clue:"Jemanden offiziell vor Gericht bringen, weil man glaubt, dass er einem Unrecht getan hat.", hint:"to take to court / sue"},
+  {word:"VERSPOTTEN",   clue:"Jemanden durch Witze oder spöttische Bemerkungen lächerlich machen.", hint:"to make fun of"},
+  {word:"REVOLUTIONAER",clue:"Etwas oder jemand, der grundlegende und radikale Veränderungen in einem System oder einer Gesellschaft bewirkt.", hint:"revolutionary"},
+
+  /* Literatur */
+  {word:"AUSKUNFT",     clue:"Eine mündlich oder schriftlich gegebene Information, die jemanden über etwas Bestimmtes aufklärt.", hint:"information"},
+  {word:"WELKEN",       clue:"Das Nachlassen der Frische einer Pflanze oder Blüte, wenn sie Wasser verliert.", hint:"to wilt"},
+  {word:"ZITTERN",      clue:"Unkontrolliertes Schütteln des Körpers, zum Beispiel aus Kälte, Angst oder Krankheit.", hint:"to tremble"},
+  {word:"ANGEMESSEN",   clue:"Passend und der jeweiligen Situation entsprechend — weder zu viel noch zu wenig.", hint:"appropriate"},
+  {word:"VERTRAULICH",  clue:"Informationen, die nur für bestimmte Personen bestimmt sind und nicht öffentlich gemacht werden sollen.", hint:"confidential"},
+
+  /* Kurzfilm */
+  {word:"LUFTDRUCK",    clue:"Das Gewicht der Luftsäule, die auf eine bestimmte Fläche drückt — wichtig für Wetter und Technik.", hint:"air pressure"},
+  {word:"TROEDELN",     clue:"Etwas sehr langsam und ohne Eile erledigen, wobei man viel Zeit vergeudet.", hint:"to dawdle / slack off"},
+  {word:"ERFINDEN",     clue:"Etwas völlig Neues schaffen oder entwickeln, das es vorher noch nicht gegeben hat.", hint:"to invent"},
+];
+
+/* Filter to words usable as Wordle answers: letters only, 3–15 chars */
+const PLAYABLE = VOCAB.filter(v => /^[A-ZÄÖÜß]+$/.test(v.word) && v.word.length >= 4 && v.word.length <= 12);
+
+const TOTAL_ROUNDS = 10;
+const ROWS = 6;
+
+let studentName='', round=0, target='', targetClue='', targetHint='';
+let guesses=[], current='', gameOver=false, usedIdx=[], results=[];
+let hintsUsed=0, hintPenalty=0, hint1Used=false, hint2Used=false, hint3Used=false;
+
+function calcPoints(tries, won, penalty){
+  if(!won) return 0;
+  return Math.max(11 - tries - penalty, 0);
+}
+
+function pickEntry(){
+  const available = PLAYABLE.map((v,i)=>({v,i})).filter(x=>!usedIdx.includes(x.i));
+  if(!available.length){ usedIdx=[]; return pickEntry(); }
+  const pick = available[Math.floor(Math.random()*available.length)];
+  usedIdx.push(pick.i);
+  return pick.v;
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+document.getElementById('start-btn').addEventListener('click',()=>{
+  const n = document.getElementById('student-name').value.trim();
+  if(!n){alert('Bitte deinen Namen eingeben!'); return;}
+  studentName=n; round=0; results=[]; usedIdx=[];
+  nextRound();
+});
+document.getElementById('student-name').addEventListener('keydown',e=>{if(e.key==='Enter') document.getElementById('start-btn').click();});
+
+function nextRound(){
+  round++;
+  const entry = pickEntry();
+  target = entry.word;
+  targetClue = entry.clue;
+  targetHint = entry.hint;
+  guesses=[]; current=''; gameOver=false;
+  hintsUsed=0; hintPenalty=0; hint1Used=false; hint2Used=false; hint3Used=false;
+
+  document.getElementById('player-label').textContent = studentName;
+  document.getElementById('round-pill').textContent = 'Runde '+round+' / '+TOTAL_ROUNDS;
+  document.getElementById('progress-fill').style.width = ((round-1)/TOTAL_ROUNDS*100)+'%';
+  document.getElementById('clue-text').textContent = targetClue;
+  document.getElementById('game-msg').textContent='';
+  document.getElementById('game-msg').className='';
+  document.getElementById('flash-bar').textContent='Errate das Wort in 6 Versuchen!';
+
+  /* reset hint buttons */
+  ['hbtn1','hbtn2','hbtn3'].forEach(id=>document.getElementById(id).classList.remove('used'));
+  document.getElementById('hbtn1').disabled=false;
+  document.getElementById('hbtn2').disabled=true;
+  document.getElementById('hbtn3').disabled=true;
+  ['hint-reveal-1','hint-reveal-2','hint-reveal-3'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.classList.remove('visible');
+    el.innerHTML='';
+  });
+
+  buildGrid(); buildKeyboard();
+  showScreen('screen-game');
+}
+
+/* ── Cell sizing ── */
+function cellSize(){
+  const w = Math.min((document.getElementById('main').offsetWidth||340)-40, 480);
+  const len = target.length;
+  const maxCell = Math.floor((w-(len-1)*5)/len);
+  return Math.min(Math.max(maxCell,30),52);
+}
+
+function buildGrid(){
+  const grid=document.getElementById('grid'); grid.innerHTML='';
+  const sz=cellSize();
+  const fs = sz>=46?'19px': sz>=38?'16px': sz>=30?'13px':'11px';
+  for(let r=0;r<ROWS;r++){
+    const row=document.createElement('div'); row.className='row'; row.id='row-'+r;
+    for(let c=0;c<target.length;c++){
+      const cell=document.createElement('div');
+      cell.className='cell'; cell.id=`cell-${r}-${c}`;
+      cell.style.width=sz+'px'; cell.style.height=sz+'px'; cell.style.fontSize=fs;
+      row.appendChild(cell);
+    }
+    grid.appendChild(row);
+  }
+  updateGrid();
+}
+
+function updateGrid(){
+  for(let r=0;r<ROWS;r++){
+    const isActive = r===guesses.length && !gameOver;
+    const displayStr = isActive ? current : (guesses[r]||'');
+    const colors = r<guesses.length ? scoreGuess(guesses[r]) : [];
+    for(let c=0;c<target.length;c++){
+      const cell=document.getElementById(`cell-${r}-${c}`);
+      if(!cell) continue;
+      cell.textContent = displayStr[c]||'';
+      cell.className='cell';
+      if(isActive) cell.classList.add('active-row');
+      if(colors[c]) cell.classList.add(colors[c]);
+    }
+  }
+}
+
+function scoreGuess(guess){
+  const res=Array(target.length).fill('absent');
+  const tArr=target.split(''), gArr=guess.split(''), used=Array(target.length).fill(false);
+  for(let i=0;i<target.length;i++) if(gArr[i]===tArr[i]){res[i]='correct';used[i]=true;}
+  for(let i=0;i<target.length;i++){
+    if(res[i]==='correct') continue;
+    for(let j=0;j<target.length;j++) if(!used[j]&&gArr[i]===tArr[j]){res[i]='present';used[j]=true;break;}
+  }
+  return res;
+}
+
+const KB_ROWS=[
+  ['Q','W','E','R','T','Z','U','I','O','P','Ü'],
+  ['A','S','D','F','G','H','J','K','L','Ö','Ä'],
+  ['ENTER','Y','X','C','V','B','N','M','ß','DEL']
+];
+
+function buildKeyboard(){
+  const kb=document.getElementById('keyboard'); kb.innerHTML='';
+  KB_ROWS.forEach(row=>{
+    const div=document.createElement('div'); div.className='kb-row';
+    row.forEach(k=>{
+      const btn=document.createElement('button');
+      btn.className='key'+(k.length>1?' wide':'');
+      btn.textContent=k; btn.dataset.key=k;
+      btn.addEventListener('click',()=>handleKey(k));
+      div.appendChild(btn);
+    });
+    kb.appendChild(div);
+  });
+}
+
+function updateKeyboard(){
+  const states={};
+  guesses.forEach(g=>{
+    const s=scoreGuess(g);
+    g.split('').forEach((ch,i)=>{
+      const cur=s[i], prev=states[ch];
+      if(!prev||cur==='correct'||(cur==='present'&&prev==='absent')) states[ch]=cur;
+    });
+  });
+  document.querySelectorAll('.key').forEach(btn=>{
+    const k=btn.dataset.key;
+    btn.className='key'+(k.length>1?' wide':'');
+    if(states[k]) btn.classList.add(states[k]);
+  });
+}
+
+function handleKey(k){
+  if(gameOver) return;
+  if(k==='DEL'||k==='BACKSPACE'){ current=current.slice(0,-1); }
+  else if(k==='ENTER'){
+    if(current.length!==target.length){ flash('Das Wort hat '+target.length+' Buchstaben!'); return; }
+    guesses.push(current);
+    const won = current===target;
+    if(won || guesses.length===ROWS){
+      gameOver=true;
+      const pts = calcPoints(guesses.length, won, hintPenalty);
+      results.push({word:target, clue:targetClue, hint:targetHint, tries:guesses.length, penalty:hintPenalty, points:pts, won});
+      const msg=document.getElementById('game-msg');
+      if(won){ msg.textContent='Richtig! +'+pts+' Punkte'; msg.className='win'; }
+      else{ msg.textContent='Das Wort war: '+target+' — 0 Punkte'; msg.className='lose'; }
+      /* unlock hints irrelevant now */
+      current=''; updateGrid(); updateKeyboard();
+      setTimeout(()=>showRoundResult(won,pts), 1400);
+      return;
+    }
+    /* after each wrong guess, unlock next hint */
+    unlockHints();
+    current=''; updateKeyboard();
+  } else if(k.length===1 && current.length<target.length){
+    current += k.toUpperCase();
+  }
+  updateGrid();
+}
+
+function unlockHints(){
+  const wrongCount = guesses.length;
+  if(wrongCount>=1 && !hint1Used) document.getElementById('hbtn1').disabled=false;
+  if(wrongCount>=2 && !hint2Used) document.getElementById('hbtn2').disabled=false;
+  if(wrongCount>=3 && !hint3Used) document.getElementById('hbtn3').disabled=false;
+}
+
+function flash(txt){
+  const bar=document.getElementById('flash-bar');
+  bar.innerHTML='<strong>'+txt+'</strong>';
+  setTimeout(()=>{ if(!gameOver) bar.textContent='Errate das Wort in 6 Versuchen!'; },1600);
+}
+
+/* ── Hint buttons ── */
+document.getElementById('hbtn1').addEventListener('click',()=>{
+  if(hint1Used||gameOver) return;
+  hint1Used=true;
+  document.getElementById('hbtn1').classList.add('used');
+  document.getElementById('hbtn1').disabled=true;
+  const r=document.getElementById('hint-reveal-1');
+  r.innerHTML='<strong>Tipp 1:</strong> Der erste Buchstabe ist <strong>'+target[0]+'</strong>';
+  r.classList.add('visible');
+});
+
+document.getElementById('hbtn2').addEventListener('click',()=>{
+  if(hint2Used||gameOver) return;
+  hint2Used=true; hintPenalty++;
+  document.getElementById('hbtn2').classList.add('used');
+  document.getElementById('hbtn2').disabled=true;
+  const dashes = target.split('').map((ch,i)=>i===0&&hint1Used?'<strong>'+ch+'</strong>':'_').join(' ');
+  const r=document.getElementById('hint-reveal-2');
+  r.innerHTML='<strong>Tipp 2 (−1 Pkt):</strong> &nbsp;'+dashes+'&nbsp; ('+target.length+' Buchstaben)';
+  r.classList.add('visible');
+});
+
+document.getElementById('hbtn3').addEventListener('click',()=>{
+  if(hint3Used||gameOver) return;
+  hint3Used=true; hintPenalty++;
+  document.getElementById('hbtn3').classList.add('used');
+  document.getElementById('hbtn3').disabled=true;
+  const r=document.getElementById('hint-reveal-3');
+  r.innerHTML='<strong>Tipp 3 (−1 Pkt):</strong> Englisch: <strong>'+targetHint+'</strong>';
+  r.classList.add('visible');
+});
+
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('screen-game').classList.contains('active')) return;
+  const k=e.key.toUpperCase();
+  if(k==='BACKSPACE'||k==='DELETE') handleKey('DEL');
+  else if(k==='ENTER') handleKey('ENTER');
+  else if(/^[A-ZÄÖÜSS]$/.test(k)) handleKey(k);
+});
+
+function showRoundResult(won, pts){
+  const totalSoFar = results.reduce((a,r)=>a+r.points,0);
+  const last = results[results.length-1];
+  const card = document.getElementById('result-card');
+  const penStr = last.penalty>0 ? '−'+last.penalty : '0';
+  card.innerHTML=`
+    <p style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:8px;font-family:'Space Mono',monospace;">Runde ${round}</p>
+    <div class="result-word">${last.word}</div>
+    <div class="result-translation">${last.hint}</div>
+    <div class="result-clue-box">${last.clue}</div>
+    <div class="pts-grid">
+      <div class="pts-box">
+        <div class="pts-label">${won?'Versuche':'Nicht erraten'}</div>
+        <div class="pts-val ${won?'win':'zero'}">${won?last.tries:'✕'}</div>
+      </div>
+      <div class="pts-box">
+        <div class="pts-label">Tipp-Abzug</div>
+        <div class="pts-val penalty">${penStr}</div>
+      </div>
+      <div class="pts-box">
+        <div class="pts-label">Punkte</div>
+        <div class="pts-val ${won?'win':'zero'}">+${pts}</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;background:var(--accent-light);border-radius:var(--radius);padding:10px;">
+      <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:500;">Gesamt bisher</div>
+      <div style="font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:var(--accent);">${totalSoFar} / ${round*10}</div>
+    </div>`;
+  const rem = TOTAL_ROUNDS - round;
+  document.getElementById('rounds-remaining').textContent = rem===0?'Alle Runden abgeschlossen!': rem+' Runde'+(rem===1?'':'n')+' verbleibend';
+  document.getElementById('next-round-btn').textContent = rem===0?'Ergebnisblatt anzeigen →':'Nächste Runde →';
+  showScreen('screen-round-result');
+}
+
+document.getElementById('next-round-btn').addEventListener('click',()=>{
+  if(round>=TOTAL_ROUNDS) showScoreSheet(); else nextRound();
+});
+
+function showScoreSheet(){
+  const total = results.reduce((a,r)=>a+r.points,0);
+  document.getElementById('sheet-name').textContent = studentName;
+  document.getElementById('grade-score').textContent = total;
+  document.getElementById('grade-date').textContent = new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
+
+  const tbl = document.getElementById('score-table');
+  tbl.innerHTML=`<tr><th>#</th><th>Wort</th><th>Definition</th><th style="text-align:center">Versuche</th><th style="text-align:center">Abzug</th><th style="text-align:right">Pkt</th></tr>`;
+  results.forEach((r,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td style="color:var(--text-muted);font-family:'Space Mono',monospace;font-size:11px;">${i+1}</td>
+      <td class="word-col">${r.word}<br><span style="font-size:10px;color:var(--text-muted);font-weight:400;">${r.hint}</span></td>
+      <td class="clue-col">${r.clue}</td>
+      <td class="num-col">${r.won?r.tries:'✕'}</td>
+      <td class="num-col" style="color:${r.penalty>0?'var(--red)':'var(--text-muted)'}">${r.penalty>0?'−'+r.penalty:'—'}</td>
+      <td class="pts-col ${r.won?'got':'miss'}">${r.points}</td>`;
+    tbl.appendChild(tr);
+  });
+  const totalRow=document.createElement('tr');
+  totalRow.className='total-row';
+  totalRow.innerHTML=`<td colspan="3" style="font-weight:700;">Gesamt</td><td class="num-col" style="font-size:12px;color:var(--text-muted);">${results.filter(r=>r.won).length}/${TOTAL_ROUNDS} richtig</td><td></td><td class="pts-col" style="color:var(--accent);font-size:16px;">${total}</td>`;
+  tbl.appendChild(totalRow);
+  showScreen('screen-scoresheet');
+}
+
+document.getElementById('print-btn').addEventListener('click',()=>window.print());
+document.getElementById('play-again-btn').addEventListener('click',()=>{
+  round=0; results=[]; usedIdx=[];
+  document.getElementById('student-name').value='';
+  showScreen('screen-setup');
+});
+</script>
+</body>
+</html>
